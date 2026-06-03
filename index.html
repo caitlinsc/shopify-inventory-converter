@@ -357,7 +357,10 @@
         <tbody id="preview-body"></tbody>
       </table>
     </div>
-    <p class="preview-note" id="preview-note"></p>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:8px;">
+      <p class="preview-note" id="preview-note"></p>
+      <button id="expand-btn" onclick="toggleExpand()" style="display:none; font-family:var(--font); font-size:0.75rem; padding:5px 12px; background:transparent; border:1px solid var(--border2); border-radius:4px; color:var(--text2); cursor:pointer; transition:background 0.15s;">Show all</button>
+    </div>
   </div>
 
 </div>
@@ -444,32 +447,54 @@ function processCSV(data) {
   renderPreview();
 }
 
-function renderPreview() {
-  const section  = document.getElementById('preview-section');
-  const label    = document.getElementById('preview-label');
-  const headRow  = document.getElementById('preview-head-row');
-  const body     = document.getElementById('preview-body');
-  const note     = document.getElementById('preview-note');
+let showingAll = false;
 
-  section.style.display = 'block';
-  label.textContent = `${outputRows.length} rows · ${SHOPIFY_HEADERS.length} columns`;
-
-  headRow.innerHTML = PREVIEW_COLS.map(h =>
-    `<th>${h}</th>`
-  ).join('');
-
-  const preview = outputRows.slice(0, 10);
-  body.innerHTML = preview.map(row =>
+function renderRows(all) {
+  const body = document.getElementById('preview-body');
+  const rows = all ? outputRows : outputRows.slice(0, 10);
+  body.innerHTML = rows.map(row =>
     '<tr>' + PREVIEW_COLS.map(h => {
       const val = row[h] ?? '';
       const cls = NUM_COLS.has(h) ? 'num' : (h === 'SKU' ? 'sku' : '');
       return `<td class="${cls}" title="${String(val).replace(/"/g, '&quot;')}">${val}</td>`;
     }).join('') + '</tr>'
   ).join('');
+}
 
-  note.textContent = outputRows.length > 10
-    ? `Showing 10 of ${outputRows.length} rows — download includes all.`
-    : `Showing all ${outputRows.length} rows.`;
+function toggleExpand() {
+  showingAll = !showingAll;
+  renderRows(showingAll);
+  const btn = document.getElementById('expand-btn');
+  const note = document.getElementById('preview-note');
+  btn.textContent = showingAll ? 'Show less' : 'Show all';
+  note.textContent = showingAll
+    ? `Showing all ${outputRows.length} rows.`
+    : `Showing 10 of ${outputRows.length} rows.`;
+}
+
+function renderPreview() {
+  const section  = document.getElementById('preview-section');
+  const label    = document.getElementById('preview-label');
+  const headRow  = document.getElementById('preview-head-row');
+  const note     = document.getElementById('preview-note');
+  const btn      = document.getElementById('expand-btn');
+
+  showingAll = false;
+  section.style.display = 'block';
+  label.textContent = `${outputRows.length} rows · ${SHOPIFY_HEADERS.length} columns`;
+
+  headRow.innerHTML = PREVIEW_COLS.map(h => `<th>${h}</th>`).join('');
+
+  renderRows(false);
+
+  if (outputRows.length > 10) {
+    note.textContent = `Showing 10 of ${outputRows.length} rows.`;
+    btn.style.display = 'inline-block';
+    btn.textContent = 'Show all';
+  } else {
+    note.textContent = `Showing all ${outputRows.length} rows.`;
+    btn.style.display = 'none';
+  }
 }
 
 function downloadCSV() {
