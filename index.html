@@ -372,14 +372,11 @@ const SHOPIFY_HEADERS = [
   'Available (not editable)','On hand (current)','On hand (new)'
 ];
 
-const PREVIEW_COLS = ['Handle','Title','SKU','Location','On hand (current)','On hand (new)'];
+const PREVIEW_COLS = ['SKU','Location','On hand (current)','On hand (new)'];
 const NUM_COLS = new Set(['On hand (current)','On hand (new)','Incoming (not editable)','Committed (not editable)','Available (not editable)']);
 
 let outputRows = [];
 
-function slugify(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
 
 function setStatus(type, msg) {
   const bar = document.getElementById('status-bar');
@@ -405,14 +402,13 @@ function processCSV(data) {
   const col = name => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
 
   const iItem      = col('Item Number');
-  const iDesc      = col('Item Description');
   const iOnHand    = col('On Hand');
   const iAvail     = col('Available');
   const iIncoming  = col('Incoming');
   const iCommitted = col('Committed');
 
-  if (iItem === -1 || iDesc === -1) {
-    setStatus('error', 'Missing "Item Number" or "Item Description" columns. Check that you\'re exporting from Compass Inventory.');
+  if (iItem === -1) {
+    setStatus('error', 'Missing "Item Number" column. Check that you\'re exporting from Compass Inventory.');
     return;
   }
   if (iOnHand === -1 && iAvail === -1) {
@@ -422,8 +418,6 @@ function processCSV(data) {
 
   outputRows = rows.map(row => {
     const sku      = String(row[iItem] || '').trim();
-    const title    = String(row[iDesc] || '').trim();
-    const handle   = slugify(title || sku);
     const incoming = iIncoming  > -1 ? (parseInt(row[iIncoming])  || 0) : 0;
     const committed= iCommitted > -1 ? (parseInt(row[iCommitted]) || 0) : 0;
     const available= iAvail     > -1 ? (parseFloat(row[iAvail])   || 0) : 0;
@@ -431,7 +425,7 @@ function processCSV(data) {
     const newQty   = mode === 'set' ? onHand : Math.round(available);
 
     return {
-      'Handle': handle, 'Title': title,
+      'Handle': '', 'Title': '',
       'Option1 Name': '', 'Option1 Value': '',
       'Option2 Name': '', 'Option2 Value': '',
       'Option3 Name': '', 'Option3 Value': '',
