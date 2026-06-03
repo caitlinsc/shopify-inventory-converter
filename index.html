@@ -258,6 +258,13 @@
 
   td.num { color: var(--accent); font-family: var(--font); }
   td.sku { color: var(--text2); }
+  td.changed {
+    background: #fffbe6;
+    color: #7a5800;
+    font-family: var(--font);
+    font-weight: 500;
+  }
+  tbody tr:hover td.changed { background: #fff3cc; }
 
   .preview-note {
     font-size: 0.75rem;
@@ -443,7 +450,11 @@ function processCSV(data) {
     };
   });
 
-  setStatus('success', `${outputRows.length} products ready. Download the CSV to upload to Shopify.`);
+  const changedCount = outputRows.filter(r => r['On hand (current)'] !== r['On hand (new)']).length;
+  const changeMsg = changedCount > 0
+    ? `${outputRows.length} products ready — ${changedCount} will change.`
+    : `${outputRows.length} products ready — no quantities will change.`;
+  setStatus('success', changeMsg);
   renderPreview();
 }
 
@@ -452,13 +463,17 @@ let showingAll = false;
 function renderRows(all) {
   const body = document.getElementById('preview-body');
   const rows = all ? outputRows : outputRows.slice(0, 10);
-  body.innerHTML = rows.map(row =>
-    '<tr>' + PREVIEW_COLS.map(h => {
+  body.innerHTML = rows.map(row => {
+    const current = row['On hand (current)'];
+    const next    = row['On hand (new)'];
+    const hasChange = current !== next;
+    return '<tr>' + PREVIEW_COLS.map(h => {
       const val = row[h] ?? '';
-      const cls = NUM_COLS.has(h) ? 'num' : (h === 'SKU' ? 'sku' : '');
+      let cls = NUM_COLS.has(h) ? 'num' : (h === 'SKU' ? 'sku' : '');
+      if (hasChange && h === 'On hand (new)') cls = 'changed';
       return `<td class="${cls}" title="${String(val).replace(/"/g, '&quot;')}">${val}</td>`;
-    }).join('') + '</tr>'
-  ).join('');
+    }).join('') + '</tr>';
+  }).join('');
 }
 
 function toggleExpand() {
